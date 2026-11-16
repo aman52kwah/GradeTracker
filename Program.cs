@@ -83,7 +83,7 @@ public class Program
         return true;
     }
 
-    /// <summary>Keeps asking until a valid name is typed. Returns null if input ends.</summary>
+    /// Keeps asking until a valid name is typed. Returns null if input ends.
     static string? ReadName(string prompt)
     {
         while (true)
