@@ -25,7 +25,8 @@ public class Student
     public string Name { get; }
     public double Score { get; }
 
-    /// The letter grade, worked out from the score each time it is read.    public string Grade => GetGrade(Score);
+    /// The letter grade, worked out from the score each time it is read.
+    public string Grade => GetGrade(Score);
 
     // A switch expression with relational patterns (C# 9 or newer).
     // Cases are checked top to bottom, and _ is the catch-all.

@@ -1,23 +1,26 @@
-﻿class Program
-{
-    
-    static string[] names = Array.Empty<string>();
-    static double[] scores = Array.Empty<double>();
+﻿namespace GradeTracker;
 
+public class Program
+{
     static void Main()
     {
+        var book = new GradeBook();
         bool running = true;
 
         while (running)
         {
             ShowMenu();
+            string? choice = Console.ReadLine();
 
-            switch (Console.ReadLine()?.Trim())
+            if (choice is null)   // input stream closed (Ctrl+D / Ctrl+Z), so stop instead of looping forever
+                break;
+
+            switch (choice.Trim())
             {
-                case "1": EnterScores(); break;
-                case "2": ShowReport(); break;
-                case "3": ShowStatistics(); break;
-                case "4" : running = false; break;
+                case "1": AddStudent(book); break;
+                case "2": ShowReport(book); break;
+                case "3": ShowStatistics(book); break;
+                case "4": running = false; break;
                 default: Console.WriteLine("Invalid choice, try again."); break;
             }
         }
@@ -27,107 +30,90 @@
 
     static void ShowMenu()
     {
-        Console.WriteLine("\n=== Welcome to Grade Tracker ==");
-        Console.WriteLine("1. Enter student scores");
-        Console.WriteLine("2. View report( with grades)");
+        Console.WriteLine("\n=== Grade Tracker ===");
+        Console.WriteLine("1. Add a student");
+        Console.WriteLine("2. View report (with grades)");
         Console.WriteLine("3. View statistics");
         Console.WriteLine("4. Quit");
-        Console.WriteLine("Choose");
+        Console.Write("Choose: ");
     }
 
-    static void EnterScores()
+    static void AddStudent(GradeBook book)
     {
-        int count = ReadInt("How many students?", 1, 50);
+        string? name = ReadName("Student name: ");
+        if (name is null) return;
 
-        names = new string[count];
-        scores = new double[count];
+        double? score = ReadScore($"Score for {name} (0-100): ");
+        if (score is null) return;
 
-        for (int i = 0; i < count; i++)
+        book.Add(new Student(name, score.Value));
+        Console.WriteLine($"Added {name}. Students so far: {book.Count}.");
+    }
+
+    static void ShowReport(GradeBook book)
+    {
+        if (!HasData(book)) return;
+
+        Console.WriteLine($"\n{"Name",-20}{"Score",8}{"Grade",8}");
+
+        foreach (Student s in book.Students)
+            Console.WriteLine($"{s.Name,-20}{s.Score,8:F1}{s.Grade,8}");
+    }
+
+    static void ShowStatistics(GradeBook book)
+    {
+        if (!HasData(book)) return;
+
+        Student highest = book.Highest();
+        Student lowest = book.Lowest();
+
+        Console.WriteLine($"\nStudents: {book.Count}");
+        Console.WriteLine($"Average:  {book.Average():F1}");
+        Console.WriteLine($"Highest:  {highest.Name} ({highest.Score:F1}, grade {highest.Grade})");
+        Console.WriteLine($"Lowest:   {lowest.Name} ({lowest.Score:F1}, grade {lowest.Grade})");
+    }
+
+    static bool HasData(GradeBook book)
+    {
+        if (!book.HasStudents)
         {
-            Console.Write($"Name of student {i + 1}: ");
-            names[i] = Console.ReadLine()?.Trim() ?? "Unknown";
-            scores[i] = ReadInt($"Score for {names[i]} (0-100): ", 0, 100);
-        }
-        Console.WriteLine("Scores saved.");
-    }
-
-    static void ShowReport()
-    {
-        if(!HasData()) return;
-
-        Console.WriteLine($"\n{"Name", -15}{"Score", 8}{"Grade", 8}");
-
-        for (int i = 0; i < scores.Length; i++)
-        {
-            Console.WriteLine($"{names[i], -15}{scores[i],8:F1}{GetGrade(scores[i],8)}");
-        };
-    }
-
-    static void ShowStatistics()
-    {
-        if (!HasData()) return;
-        int hi = FindHighestIndex(scores);
-        int lo = FindLowestIndex(scores);
-
-
-        Console.WriteLine($"\nAverage: {CalculateAverage(scores):F1}");
-        Console.WriteLine($"Highest: {names[hi]}({scores[hi]})");
-        Console.WriteLine($"Lowest: {names[lo]} ({scores[lo]})");
-    }
-
-    static bool HasData()
-    {
-        if (scores.Length == 0)
-       { Console.WriteLine("No scores yet. Choose option 1 first.");
+            Console.WriteLine("No students yet. Choose option 1 first.");
             return false;
         }
         return true;
-
     }
 
-    static double CalculateAverage(double[] values)
-    {
-        double sum = 0;
-        foreach(double v in values) sum += v;
-        return sum / values.Length;
-    }
-
-
-   static int FindHighestIndex(double[] values)
-    {
-        int best = 0;
-        for(int i = 1; i < values.Length; i++)
-        if (values[i] > values[best]) best = i;
-
-        return best;
-    }
-
-    static int FindLowestIndex(double[] values)
-    {
-        int worst = 0;
-        for (int i = 1; i < values.Length; i++)
-        if(values[i] < values[worst]) worst = i;
-
-        return worst;
-    }
-    static string GetGrade(double score, int v) => score switch
-    {
-        >= 90 => "A",
-        >= 80 => "B",
-        >= 70 => "C",
-        >= 60 => "D",
-          >= 50 => "F",
-    };
-
-    static int ReadInt(string prompt, int min, int max)
+    /// <summary>Keeps asking until a valid name is typed. Returns null if input ends.</summary>
+    static string? ReadName(string prompt)
     {
         while (true)
         {
             Console.Write(prompt);
-            if(int.TryParse(Console.ReadLine(), out int values) && values >= min && values <= max)
-            return values;
-            Console.WriteLine($"Enter a whole number from {min} to {max}.");
+            string? line = Console.ReadLine();
+
+            if (line is null) return null;
+
+            if (InputParser.TryParseName(line, out string name))
+                return name;
+
+            Console.WriteLine("Name cannot be empty.");
         }
     }
-    
+
+    /// <summary>Keeps asking until a valid score is typed. Returns null if input ends.</summary>
+    static double? ReadScore(string prompt)
+    {
+        while (true)
+        {
+            Console.Write(prompt);
+            string? line = Console.ReadLine();
+
+            if (line is null) return null;
+
+            if (InputParser.TryParseScore(line, out double score))
+                return score;
+
+            Console.WriteLine("Enter a number from 0 to 100 (for example 85 or 72.5).");
+        }
+    }
 }
