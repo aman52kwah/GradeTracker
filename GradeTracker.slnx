@@ -1,4 +1,0 @@
-<Solution>
-  <Project Path="GradeTracker.csproj" />
-  <Project Path="GradeTracker.Tests/GradeTracker.Tests.csproj" />
-</Solution>
