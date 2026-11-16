@@ -110,7 +110,7 @@
 
         return worst;
     }
-    static string GetGrade(double score) => score switch
+    static string GetGrade(double score, int v) => score switch
     {
         >= 90 => "A",
         >= 80 => "B",
